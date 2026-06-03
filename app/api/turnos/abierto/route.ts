@@ -1,10 +1,16 @@
 import { NextResponse } from "next/server";
-import { getDb } from "@/lib/db";
+import { getSupabase } from "@/lib/supabase";
 
 export async function GET() {
-  const db = getDb();
-  const turno = db
-    .prepare("SELECT * FROM turnos WHERE estado = 'abierto' ORDER BY id DESC LIMIT 1")
-    .get();
-  return NextResponse.json(turno ?? null);
+  const supabase = getSupabase();
+  const { data, error } = await supabase
+    .from("turnos")
+    .select("*")
+    .eq("estado", "abierto")
+    .order("fecha_apertura", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  return NextResponse.json(data ?? null);
 }

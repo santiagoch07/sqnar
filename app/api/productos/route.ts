@@ -1,22 +1,28 @@
 import { NextResponse } from "next/server";
-import { getDb } from "@/lib/db";
+import { getSupabase } from "@/lib/supabase";
 import { pesosToCentavos } from "@/lib/format";
 
+type CategoriaEmbed = { id: string; nombre: string } | null;
+
 export async function GET() {
-  const db = getDb();
-  const productos = db
-    .prepare(
-      `SELECT p.*, c.nombre AS categoria_nombre
-       FROM productos p
-       LEFT JOIN categorias c ON p.categoria_id = c.id
-       ORDER BY c.orden ASC, c.nombre ASC, p.nombre ASC`
-    )
-    .all();
+  const supabase = getSupabase();
+  const { data, error } = await supabase
+    .from("productos")
+    .select("*, categoria:categorias(id, nombre)")
+    .order("nombre", { ascending: true });
+
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+  const productos = (data ?? []).map(({ categoria, ...p }) => ({
+    ...p,
+    categoria_nombre: (categoria as CategoriaEmbed)?.nombre ?? null,
+  }));
+
   return NextResponse.json(productos);
 }
 
 export async function POST(request: Request) {
-  const db = getDb();
+  const supabase = getSupabase();
   const body = await request.json();
   const { nombre, precio_pesos, categoria_id, disponible = true } = body;
 
@@ -27,21 +33,22 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Precio inválido" }, { status: 400 });
   }
 
-  const precio = pesosToCentavos(precio_pesos);
-  const result = db
-    .prepare(
-      "INSERT INTO productos (nombre, precio, categoria_id, disponible) VALUES (?, ?, ?, ?)"
-    )
-    .run(nombre.trim(), precio, categoria_id ?? null, disponible ? 1 : 0);
+  const { data, error } = await supabase
+    .from("productos")
+    .insert({
+      nombre: nombre.trim(),
+      precio: pesosToCentavos(precio_pesos),
+      categoria_id: categoria_id ?? null,
+      disponible,
+    })
+    .select("*, categoria:categorias(id, nombre)")
+    .single();
 
-  const producto = db
-    .prepare(
-      `SELECT p.*, c.nombre AS categoria_nombre
-       FROM productos p
-       LEFT JOIN categorias c ON p.categoria_id = c.id
-       WHERE p.id = ?`
-    )
-    .get(result.lastInsertRowid);
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
-  return NextResponse.json(producto, { status: 201 });
+  const { categoria, ...rest } = data as typeof data & { categoria: CategoriaEmbed };
+  return NextResponse.json(
+    { ...rest, categoria_nombre: categoria?.nombre ?? null },
+    { status: 201 }
+  );
 }

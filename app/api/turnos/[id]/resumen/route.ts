@@ -1,47 +1,43 @@
 import { NextResponse } from "next/server";
-import { getDb } from "@/lib/db";
+import { getSupabase } from "@/lib/supabase";
 
 type Params = { params: { id: string } };
 
 export async function GET(_request: Request, { params }: Params) {
-  const db = getDb();
-  const id = parseInt(params.id, 10);
+  const supabase = getSupabase();
+  const { id } = params;
 
-  const turno = db
-    .prepare("SELECT * FROM turnos WHERE id = ?")
-    .get(id) as { id: number; efectivo_inicial: number } | undefined;
+  const { data: turno, error: turnoError } = await supabase
+    .from("turnos")
+    .select("id, efectivo_inicial")
+    .eq("id", id)
+    .maybeSingle();
 
-  if (!turno) {
-    return NextResponse.json({ error: "Turno no encontrado" }, { status: 404 });
-  }
+  if (turnoError) return NextResponse.json({ error: turnoError.message }, { status: 500 });
+  if (!turno) return NextResponse.json({ error: "Turno no encontrado" }, { status: 404 });
 
-  const porMetodo = db
-    .prepare(
-      `SELECT
-         metodo_pago,
-         COUNT(*) AS tickets,
-         COALESCE(SUM(total), 0) AS total,
-         COALESCE(SUM(propina), 0) AS propinas
-       FROM ordenes
-       WHERE turno_id = ?
-       GROUP BY metodo_pago`
-    )
-    .all(id) as { metodo_pago: string; tickets: number; total: number; propinas: number }[];
+  const { data: ordenes, error: ordenesError } = await supabase
+    .from("ordenes")
+    .select("metodo_pago, total, propina")
+    .eq("turno_id", id);
 
-  const efectivoRow = porMetodo.find((r) => r.metodo_pago === "efectivo");
-  const tarjetaRow = porMetodo.find((r) => r.metodo_pago === "tarjeta");
+  if (ordenesError) return NextResponse.json({ error: ordenesError.message }, { status: 500 });
 
-  const total_efectivo = efectivoRow?.total ?? 0;
-  const total_tarjeta = tarjetaRow?.total ?? 0;
-  const propinas = (efectivoRow?.propinas ?? 0) + (tarjetaRow?.propinas ?? 0);
-  const tickets = porMetodo.reduce((s, r) => s + r.tickets, 0);
+  const rows = ordenes ?? [];
+  const efectivoRows = rows.filter((o) => o.metodo_pago === "efectivo");
+  const tarjetaRows = rows.filter((o) => o.metodo_pago === "tarjeta");
+
+  const total_efectivo = efectivoRows.reduce((s, o) => s + o.total, 0);
+  const total_tarjeta = tarjetaRows.reduce((s, o) => s + o.total, 0);
+  const propinas_efectivo = efectivoRows.reduce((s, o) => s + o.propina, 0);
+  const propinas_tarjeta = tarjetaRows.reduce((s, o) => s + o.propina, 0);
 
   return NextResponse.json({
-    tickets,
+    tickets: rows.length,
     total_efectivo,
     total_tarjeta,
-    propinas,
-    propinas_efectivo: efectivoRow?.propinas ?? 0,
+    propinas: propinas_efectivo + propinas_tarjeta,
+    propinas_efectivo,
     efectivo_esperado: turno.efectivo_inicial + total_efectivo,
   });
 }

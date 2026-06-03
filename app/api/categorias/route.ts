@@ -1,32 +1,38 @@
 import { NextResponse } from "next/server";
-import { getDb } from "@/lib/db";
+import { getSupabase } from "@/lib/supabase";
 
 export async function GET() {
-  const db = getDb();
-  const categorias = db
-    .prepare("SELECT * FROM categorias ORDER BY orden ASC, nombre ASC")
-    .all();
-  return NextResponse.json(categorias);
+  const supabase = getSupabase();
+  const { data, error } = await supabase
+    .from("categorias")
+    .select("*")
+    .order("nombre", { ascending: true });
+
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  return NextResponse.json(data);
 }
 
 export async function POST(request: Request) {
-  const db = getDb();
+  const supabase = getSupabase();
   const body = await request.json();
-  const { nombre, orden = 0 } = body;
+  const { nombre } = body;
 
   if (!nombre?.trim()) {
     return NextResponse.json({ error: "El nombre es requerido" }, { status: 400 });
   }
 
-  try {
-    const result = db
-      .prepare("INSERT INTO categorias (nombre, orden) VALUES (?, ?)")
-      .run(nombre.trim(), orden);
-    const categoria = db
-      .prepare("SELECT * FROM categorias WHERE id = ?")
-      .get(result.lastInsertRowid);
-    return NextResponse.json(categoria, { status: 201 });
-  } catch {
-    return NextResponse.json({ error: "La categoría ya existe" }, { status: 409 });
+  const { data, error } = await supabase
+    .from("categorias")
+    .insert({ nombre: nombre.trim() })
+    .select()
+    .single();
+
+  if (error) {
+    if (error.code === "23505") {
+      return NextResponse.json({ error: "La categoría ya existe" }, { status: 409 });
+    }
+    return NextResponse.json({ error: error.message }, { status: 500 });
   }
+
+  return NextResponse.json(data, { status: 201 });
 }

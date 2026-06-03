@@ -1,67 +1,66 @@
 import { NextResponse } from "next/server";
-import { getDb } from "@/lib/db";
+import { getSupabase } from "@/lib/supabase";
 import { pesosToCentavos } from "@/lib/format";
 
 type Params = { params: { id: string } };
+type CategoriaEmbed = { id: string; nombre: string } | null;
 
 export async function PATCH(request: Request, { params }: Params) {
-  const db = getDb();
-  const id = parseInt(params.id, 10);
+  const supabase = getSupabase();
+  const { id } = params;
   const body = await request.json();
 
-  const existing = db.prepare("SELECT * FROM productos WHERE id = ?").get(id);
+  const { data: existing, error: fetchError } = await supabase
+    .from("productos")
+    .select("id")
+    .eq("id", id)
+    .maybeSingle();
+
+  if (fetchError) return NextResponse.json({ error: fetchError.message }, { status: 500 });
   if (!existing) {
     return NextResponse.json({ error: "Producto no encontrado" }, { status: 404 });
   }
 
-  const fields: string[] = [];
-  const values: unknown[] = [];
+  const updates: Record<string, unknown> = {};
+  if (body.nombre !== undefined) updates.nombre = body.nombre.trim();
+  if (body.precio_pesos !== undefined) updates.precio = pesosToCentavos(body.precio_pesos);
+  if (body.categoria_id !== undefined) updates.categoria_id = body.categoria_id;
+  if (body.disponible !== undefined) updates.disponible = body.disponible;
 
-  if (body.nombre !== undefined) {
-    fields.push("nombre = ?");
-    values.push(body.nombre.trim());
-  }
-  if (body.precio_pesos !== undefined) {
-    fields.push("precio = ?");
-    values.push(pesosToCentavos(body.precio_pesos));
-  }
-  if (body.categoria_id !== undefined) {
-    fields.push("categoria_id = ?");
-    values.push(body.categoria_id);
-  }
-  if (body.disponible !== undefined) {
-    fields.push("disponible = ?");
-    values.push(body.disponible ? 1 : 0);
-  }
-
-  if (fields.length === 0) {
+  if (Object.keys(updates).length === 0) {
     return NextResponse.json({ error: "Sin campos para actualizar" }, { status: 400 });
   }
 
-  values.push(id);
-  db.prepare(`UPDATE productos SET ${fields.join(", ")} WHERE id = ?`).run(...values);
+  const { data, error } = await supabase
+    .from("productos")
+    .update(updates)
+    .eq("id", id)
+    .select("*, categoria:categorias(id, nombre)")
+    .single();
 
-  const producto = db
-    .prepare(
-      `SELECT p.*, c.nombre AS categoria_nombre
-       FROM productos p
-       LEFT JOIN categorias c ON p.categoria_id = c.id
-       WHERE p.id = ?`
-    )
-    .get(id);
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
-  return NextResponse.json(producto);
+  const { categoria, ...rest } = data as typeof data & { categoria: CategoriaEmbed };
+  return NextResponse.json({ ...rest, categoria_nombre: categoria?.nombre ?? null });
 }
 
 export async function DELETE(_request: Request, { params }: Params) {
-  const db = getDb();
-  const id = parseInt(params.id, 10);
+  const supabase = getSupabase();
+  const { id } = params;
 
-  const existing = db.prepare("SELECT id FROM productos WHERE id = ?").get(id);
+  const { data: existing, error: fetchError } = await supabase
+    .from("productos")
+    .select("id")
+    .eq("id", id)
+    .maybeSingle();
+
+  if (fetchError) return NextResponse.json({ error: fetchError.message }, { status: 500 });
   if (!existing) {
     return NextResponse.json({ error: "Producto no encontrado" }, { status: 404 });
   }
 
-  db.prepare("DELETE FROM productos WHERE id = ?").run(id);
+  const { error } = await supabase.from("productos").delete().eq("id", id);
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
   return new NextResponse(null, { status: 204 });
 }

@@ -1,19 +1,22 @@
 import { NextResponse } from "next/server";
-import { getDb } from "@/lib/db";
+import { getSupabase } from "@/lib/supabase";
 import { pesosToCentavos } from "@/lib/format";
 
 type ItemInput = {
-  producto_id: number;
+  producto_id: string;
   cantidad: number;
 };
 
 export async function POST(request: Request) {
-  const db = getDb();
+  const supabase = getSupabase();
   const body = await request.json();
   const { items, propina_pesos = 0, metodo_pago, turno_id = null } = body;
 
   if (!Array.isArray(items) || items.length === 0) {
-    return NextResponse.json({ error: "La orden debe tener al menos un ítem" }, { status: 400 });
+    return NextResponse.json(
+      { error: "La orden debe tener al menos un ítem" },
+      { status: 400 }
+    );
   }
   if (metodo_pago !== "efectivo" && metodo_pago !== "tarjeta") {
     return NextResponse.json(
@@ -22,16 +25,16 @@ export async function POST(request: Request) {
     );
   }
 
-  // Calcular total en backend a partir de precios reales en DB
-  const placeholders = items.map(() => "?").join(",");
-  const ids = items.map((i: ItemInput) => i.producto_id);
-  const productosDb = db
-    .prepare(
-      `SELECT id, precio, disponible FROM productos WHERE id IN (${placeholders})`
-    )
-    .all(...ids) as { id: number; precio: number; disponible: number }[];
+  // Validar precios y disponibilidad desde la DB (nunca confiar en el frontend)
+  const ids = Array.from(new Set((items as ItemInput[]).map((i) => i.producto_id)));
+  const { data: productosDb, error: fetchError } = await supabase
+    .from("productos")
+    .select("id, precio, disponible")
+    .in("id", ids);
 
-  const precioMap = new Map(productosDb.map((p) => [p.id, p]));
+  if (fetchError) return NextResponse.json({ error: fetchError.message }, { status: 500 });
+
+  const precioMap = new Map((productosDb ?? []).map((p) => [p.id, p]));
 
   for (const item of items as ItemInput[]) {
     const prod = precioMap.get(item.producto_id);
@@ -52,32 +55,40 @@ export async function POST(request: Request) {
     }
   }
 
-  const subtotal = (items as ItemInput[]).reduce((acc, item) => {
-    return acc + precioMap.get(item.producto_id)!.precio * item.cantidad;
-  }, 0);
-
+  const subtotal = (items as ItemInput[]).reduce(
+    (acc, item) => acc + precioMap.get(item.producto_id)!.precio * item.cantidad,
+    0
+  );
   const propina = pesosToCentavos(propina_pesos);
   const total = subtotal + propina;
 
-  const crearOrden = db.transaction(() => {
-    const ordenResult = db
-      .prepare(
-        "INSERT INTO ordenes (total, propina, metodo_pago, turno_id) VALUES (?, ?, ?, ?)"
-      )
-      .run(total, propina, metodo_pago, turno_id);
+  // Insertar orden
+  const { data: orden, error: ordenError } = await supabase
+    .from("ordenes")
+    .insert({ total, propina, metodo_pago, turno_id })
+    .select()
+    .single();
 
-    const ordenId = ordenResult.lastInsertRowid;
+  if (ordenError) return NextResponse.json({ error: ordenError.message }, { status: 500 });
 
-    for (const item of items as ItemInput[]) {
-      const precio_unitario = precioMap.get(item.producto_id)!.precio;
-      db.prepare(
-        "INSERT INTO orden_items (orden_id, producto_id, cantidad, precio_unitario) VALUES (?, ?, ?, ?)"
-      ).run(ordenId, item.producto_id, item.cantidad, precio_unitario);
-    }
+  // Insertar items en batch
+  const itemsToInsert = (items as ItemInput[]).map((item) => ({
+    orden_id: orden.id,
+    producto_id: item.producto_id,
+    cantidad: item.cantidad,
+    precio_unitario: precioMap.get(item.producto_id)!.precio,
+  }));
 
-    return db.prepare("SELECT * FROM ordenes WHERE id = ?").get(ordenId);
-  });
+  const { data: itemsInserted, error: itemsError } = await supabase
+    .from("orden_items")
+    .insert(itemsToInsert)
+    .select();
 
-  const orden = crearOrden();
-  return NextResponse.json(orden, { status: 201 });
+  if (itemsError) {
+    // Rollback manual: limpiar orden huérfana
+    await supabase.from("ordenes").delete().eq("id", orden.id);
+    return NextResponse.json({ error: itemsError.message }, { status: 500 });
+  }
+
+  return NextResponse.json({ ...orden, items: itemsInserted }, { status: 201 });
 }

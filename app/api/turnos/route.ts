@@ -1,14 +1,20 @@
 import { NextResponse } from "next/server";
-import { getDb } from "@/lib/db";
+import { getSupabase } from "@/lib/supabase";
 import { pesosToCentavos } from "@/lib/format";
 
 export async function POST(request: Request) {
-  const db = getDb();
+  const supabase = getSupabase();
 
-  // Solo puede haber un turno abierto a la vez
-  const abierto = db
-    .prepare("SELECT id FROM turnos WHERE estado = 'abierto' LIMIT 1")
-    .get();
+  const { data: abierto, error: checkError } = await supabase
+    .from("turnos")
+    .select("id")
+    .eq("estado", "abierto")
+    .limit(1)
+    .maybeSingle();
+
+  if (checkError) {
+    return NextResponse.json({ error: checkError.message }, { status: 500 });
+  }
   if (abierto) {
     return NextResponse.json({ error: "Ya hay un turno abierto" }, { status: 409 });
   }
@@ -16,13 +22,13 @@ export async function POST(request: Request) {
   const body = await request.json();
   const efectivo_inicial = pesosToCentavos(body.efectivo_inicial_pesos ?? 0);
 
-  const result = db
-    .prepare("INSERT INTO turnos (efectivo_inicial) VALUES (?)")
-    .run(efectivo_inicial);
+  const { data, error } = await supabase
+    .from("turnos")
+    .insert({ efectivo_inicial })
+    .select()
+    .single();
 
-  const turno = db
-    .prepare("SELECT * FROM turnos WHERE id = ?")
-    .get(result.lastInsertRowid);
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
-  return NextResponse.json(turno, { status: 201 });
+  return NextResponse.json(data, { status: 201 });
 }
