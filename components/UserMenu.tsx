@@ -1,9 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
 import { LogOut, Building2 } from "lucide-react";
-import { getSupabaseBrowser } from "@/lib/supabase-browser";
 
 type UsuarioActual = {
   id: string;
@@ -14,7 +12,6 @@ type UsuarioActual = {
 };
 
 export default function UserMenu() {
-  const router = useRouter();
   const [usuario, setUsuario] = useState<UsuarioActual | null>(null);
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -37,10 +34,8 @@ export default function UserMenu() {
   }, [open]);
 
   async function handleLogout() {
-    const supabase = getSupabaseBrowser();
-    await supabase.auth.signOut();
-    router.push("/login");
-    router.refresh();
+    await fetch("/api/logout", { method: "POST" });
+    window.location.href = "/login";
   }
 
   if (!usuario) return null;
