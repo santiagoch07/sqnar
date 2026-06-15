@@ -14,7 +14,8 @@ const supabase = getSupabaseBrowser();
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const wasRedirected = searchParams.get("redirect") === "1";
+  const redirectTo = searchParams.get("redirect");
+  const wasRedirected = !!redirectTo;
   const [email, setEmail]       = useState("");
   const [password, setPassword] = useState("");
   const [error, setError]       = useState("");
@@ -31,7 +32,8 @@ function LoginForm() {
       setError(authError.message);
       setLoading(false);
     } else {
-      router.push("/apps");
+      const isValidRedirect = redirectTo && redirectTo.startsWith("/") && !redirectTo.startsWith("//");
+      router.push(isValidRedirect ? redirectTo : "/apps");
     }
   }
 

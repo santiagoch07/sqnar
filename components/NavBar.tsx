@@ -13,7 +13,7 @@ type NavItem = { href: string; label: string; Icon?: LucideIcon; roles?: Rol[] }
 
 const LINKS: NavItem[] = [
   { href: "/pos",             label: "Caja" },
-  { href: "/admin/productos", label: "Productos",                 roles: ["dueno"] },
+  { href: "/productos",        label: "Productos",                 roles: ["dueno"] },
   { href: "/corte",           label: "Corte" },
   { href: "/finanzas",        label: "Finanzas", Icon: TrendingUp, roles: ["dueno"] },
   { href: "/equipo",          label: "Equipo",                    roles: ["dueno"] },

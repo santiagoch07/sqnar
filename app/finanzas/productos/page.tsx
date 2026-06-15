@@ -181,7 +181,7 @@ export default function ProductosRentabilidadPage() {
                             <span className="text-text">{p.nombre}</span>
                             {p.costo_no_capturado && (
                               <span
-                                title="Costo no capturado — captúralo en /admin/productos para ver tu margen real"
+                                title="Costo no capturado — captúralo en /productos para ver tu margen real"
                                 className="shrink-0"
                               >
                                 <AlertCircle size={13} className="text-orange-400" />

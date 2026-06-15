@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
-import NavBar from "@/components/NavBar";
+import NavBarWrapper from "@/components/NavBarWrapper";
 import { getUsuarioActual } from "@/lib/auth-server";
 
 const inter = Inter({
@@ -26,7 +26,7 @@ export default async function RootLayout({
   return (
     <html lang="es-MX" className="dark">
       <body className={`${inter.variable} font-sans antialiased bg-bg text-text flex flex-col h-screen`}>
-        <NavBar rol={rol} />
+        <NavBarWrapper rol={rol} />
         <div className="flex-1 overflow-hidden">
           {children}
         </div>

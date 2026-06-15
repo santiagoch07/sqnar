@@ -29,11 +29,11 @@ export async function middleware(request: NextRequest) {
   const isPublicPath = PUBLIC_PATHS.some((p) => pathname.startsWith(p));
   const isPublicApi  = PUBLIC_API.some((p) => pathname.startsWith(p));
 
-  // Sin sesión y ruta protegida → redirigir a login
+  // Sin sesión y ruta protegida → redirigir a login con la ruta original como redirect
   if (!user && !isPublicPath && !isPublicApi) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
-    url.searchParams.set("redirect", "1");
+    url.searchParams.set("redirect", pathname);
     return NextResponse.redirect(url);
   }
 
@@ -44,8 +44,15 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
+  // Con sesión en / → redirigir a /apps
+  if (user && pathname === "/") {
+    const url = request.nextUrl.clone();
+    url.pathname = "/apps";
+    return NextResponse.redirect(url);
+  }
+
   // Cajero intentando acceder a rutas exclusivas de dueño → redirigir a /pos
-  const RESTRICTED_TO_DUENO = ["/admin", "/finanzas", "/equipo"];
+  const RESTRICTED_TO_DUENO = ["/productos", "/finanzas", "/equipo"];
   if (user && !isPublicPath && !isPublicApi) {
     const isRestricted = RESTRICTED_TO_DUENO.some((p) => pathname.startsWith(p));
     if (isRestricted) {
