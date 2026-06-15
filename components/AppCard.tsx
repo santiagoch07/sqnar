@@ -1,16 +1,26 @@
 "use client";
 
 import Link from "next/link";
-import type { LucideIcon } from "lucide-react";
+import { ShoppingCart, TrendingUp, Settings } from "lucide-react";
+
+const ICONS = {
+  cart: ShoppingCart,
+  trending: TrendingUp,
+  settings: Settings,
+};
+
+type IconKey = keyof typeof ICONS;
 
 type AppCardProps = {
   href: string;
-  icon: LucideIcon;
+  icon: IconKey;
   title: string;
   description: string;
 };
 
-export default function AppCard({ href, icon: Icon, title, description }: AppCardProps) {
+export default function AppCard({ href, icon, title, description }: AppCardProps) {
+  const Icon = ICONS[icon];
+
   return (
     <Link
       href={href}

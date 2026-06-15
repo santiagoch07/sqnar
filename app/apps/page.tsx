@@ -1,5 +1,4 @@
 import { redirect } from "next/navigation";
-import { ShoppingCart, TrendingUp, Settings } from "lucide-react";
 import AppCard from "@/components/AppCard";
 import { getUsuarioActual } from "@/lib/auth-server";
 
@@ -22,14 +21,14 @@ export default async function AppsPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <AppCard
             href="/pos"
-            icon={ShoppingCart}
+            icon="cart"
             title="SQNAR POS"
             description="Vende, registra pedidos y haz tu corte del día"
           />
           {esDueno && (
             <AppCard
               href="/finanzas"
-              icon={TrendingUp}
+              icon="trending"
               title="Salud Financiera"
               description="Tu rentabilidad, punto de equilibrio y productos estrella"
             />
@@ -37,7 +36,7 @@ export default async function AppsPage() {
           {esDueno && (
             <AppCard
               href="/equipo"
-              icon={Settings}
+              icon="settings"
               title="Administración"
               description="Gestiona tu equipo y la configuración de tu cafetería"
             />
