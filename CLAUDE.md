@@ -143,7 +143,8 @@ Este patrón ya está aplicado en todas las routes existentes. Mantenerlo para n
 
 ## Estructura de páginas existentes
 
-- `/` — Landing con CTA "Abrir caja"
+- `/apps` — Dashboard de aplicaciones de SQNAR. Punto de entrada después del login. Muestra las apps disponibles según el rol del usuario.
+- `/` — Landing pública con CTAs "Iniciar sesión" y "Registrarse". Redirige a /apps si hay sesión activa.
 - `/pos` — Pantalla de caja (turno + productos + ticket + cobro)
 - `/admin/productos` — CRUD de productos con costo y margen
 - `/corte` — Resumen del día con KPIs, comparativos, top productos, gráfica por hora
@@ -203,6 +204,7 @@ return Response.json(data);
 - **Propina** se captura en el POS (no en la terminal bancaria) por simplicidad inicial.
 - **Modo offline**: no soportado por ahora. Roadmap si los pilotos lo piden.
 - **Ranking de productos por rentabilidad implementado**. Permite identificar productos con alto margen vs alto volumen. Insight automático cuando hay desalineación entre el más vendido y el que más ganancia genera.
+- **SQNAR es plataforma multi-app**. Después del login, el usuario va a /apps donde elige qué aplicación usar (POS, Salud Financiera, Administración). Cada app es independiente pero comparte la misma base de datos.
 
 ## Roadmap conocido (no construir sin pedirlo explícito)
 

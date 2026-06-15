@@ -31,7 +31,7 @@ function LoginForm() {
       setError(authError.message);
       setLoading(false);
     } else {
-      router.push("/pos");
+      router.push("/apps");
     }
   }
 

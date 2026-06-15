@@ -1,15 +1,18 @@
+import { redirect } from "next/navigation";
 import Link from "next/link";
 import Button from "@/components/ui/Button";
 import SqnarLogo from "@/components/SqnarLogo";
+import { getUsuarioActual } from "@/lib/auth-server";
 
-export default function Home() {
+export default async function Home() {
+  const usuario = await getUsuarioActual();
+  if (usuario) redirect("/apps");
+
   return (
     <div className="h-full flex items-center justify-center px-6">
       <div className="w-full max-w-2xl space-y-10">
-        {/* Logo */}
         <SqnarLogo size="lg" />
 
-        {/* Hero */}
         <div className="border-l-4 border-accent pl-6 space-y-4">
           <h1 className="text-6xl font-semibold text-text-strong leading-[1.05] text-balance">
             Tu cafetería,<br />en orden.
@@ -19,16 +22,15 @@ export default function Home() {
           </p>
         </div>
 
-        {/* CTAs */}
         <div className="flex flex-wrap items-center gap-4">
-          <Link href="/pos">
+          <Link href="/login">
             <Button variant="primary" size="xl">
-              Abrir caja
+              Iniciar sesión
             </Button>
           </Link>
-          <Link href="/corte">
+          <Link href="/registro">
             <Button variant="ghost" size="lg">
-              Ver corte del día
+              Registrarse
             </Button>
           </Link>
         </div>

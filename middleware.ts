@@ -37,10 +37,10 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  // Con sesión en login/registro → redirigir a /pos
+  // Con sesión en login/registro → redirigir a /apps
   if (user && isPublicPath) {
     const url = request.nextUrl.clone();
-    url.pathname = "/pos";
+    url.pathname = "/apps";
     return NextResponse.redirect(url);
   }
 
