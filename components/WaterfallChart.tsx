@@ -5,7 +5,7 @@ import {
 } from "recharts";
 import { formatMXN } from "@/lib/format";
 
-type WFBar = { name: string; base: number; valor: number; color: string };
+type WFBar = { name: string; valor: number; color: string };
 
 function CustomTooltip({ active, payload, label }: {
   active?: boolean; payload?: { value: number; dataKey: string }[]; label?: string;
@@ -33,10 +33,7 @@ export default function WaterfallChart({ data }: { data: WFBar[] }) {
         />
         <YAxis hide />
         <Tooltip content={<CustomTooltip />} cursor={{ fill: "rgba(255,255,255,0.04)" }} />
-        {/* Base invisible que eleva la barra de valor */}
-        <Bar dataKey="base" stackId="s" fill="transparent" isAnimationActive={false} />
-        {/* Barra coloreada encima */}
-        <Bar dataKey="valor" stackId="s" radius={[4, 4, 0, 0]}>
+        <Bar dataKey="valor" radius={[4, 4, 0, 0]}>
           {data.map((entry, i) => (
             <Cell key={i} fill={entry.color} />
           ))}

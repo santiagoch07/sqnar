@@ -20,14 +20,14 @@ export default async function ConSidebarLayout({
   const userName = usuario.nombre ?? usuario.email.split("@")[0];
 
   return (
-    <div className="h-full">
+    <div className="min-h-screen bg-bg">
       <AppSidebar
         rol={usuario.rol as "dueno" | "cajero"}
         userInitials={userInitials}
         userName={userName}
       />
       <main
-        className="h-full transition-all duration-200"
+        className="transition-all duration-200"
         style={{ marginLeft: "var(--sidebar-width, 240px)" }}
       >
         {children}

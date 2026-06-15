@@ -116,12 +116,12 @@ export default function FinanzasDashboard() {
   const sinGastos = k ? k.gastos_fijos === 0 : true;
   const sinCostos = k ? k.costo_variable === 0 && k.ventas_totales > 0 : false;
 
-  // Datos para el gráfico waterfall
+  // Datos para el gráfico waterfall — barras independientes desde y=0
   const waterfallData = k ? [
-    { name: "Ventas",             base: 0,                                      valor: k.ventas_totales,                  color: "#22c55e" },
-    { name: "Costo\nproductos",   base: k.margen_contribucion,                  valor: k.costo_variable,                  color: "#ef4444" },
-    { name: "Gastos\nfijos",      base: Math.max(0, k.utilidad_neta),           valor: k.gastos_fijos,                    color: "#f97316" },
-    { name: "Utilidad\nneta",     base: 0,                                      valor: Math.max(0, k.utilidad_neta),      color: "#FFD944" },
+    { name: "Ventas",           valor: k.ventas_totales,          color: "#22C55E" },
+    { name: "Costo\nproductos", valor: k.costo_variable,          color: "#EF4444" },
+    { name: "Gastos\nfijos",    valor: k.gastos_fijos,            color: "#F97316" },
+    { name: "Utilidad\nneta",   valor: Math.abs(k.utilidad_neta), color: k.utilidad_neta < 0 ? "#EF4444" : "#FFD944" },
   ] : [];
 
   const topGasto = data?.gastos_por_categoria[0]?.monto ?? 1;
