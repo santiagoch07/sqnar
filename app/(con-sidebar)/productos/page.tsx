@@ -104,7 +104,6 @@ export default function AdminProductosPage() {
         {/* Header */}
         <div className="flex items-center justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-semibold text-text-strong">Productos</h1>
             {!loading && <p className="text-sm text-muted mt-0.5">{productos.length} productos registrados</p>}
           </div>
           <Button variant="primary" size="md" onClick={abrirNuevo}>
