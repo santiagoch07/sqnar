@@ -27,7 +27,7 @@ export default async function RootLayout({
     <html lang="es-MX" className="dark">
       <body className={`${inter.variable} font-sans antialiased bg-bg text-text flex flex-col h-screen`}>
         <NavBarWrapper rol={rol} />
-        <div className="flex-1 overflow-hidden">
+        <div className="flex-1 overflow-y-auto">
           {children}
         </div>
       </body>
