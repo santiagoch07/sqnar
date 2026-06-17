@@ -6,6 +6,7 @@ import AppCard from "@/components/AppCard";
 import UserMenuDropdown from "@/components/UserMenuDropdown";
 import TimeGreeting from "@/components/TimeGreeting";
 import { getUsuarioActual } from "@/lib/auth-server";
+import { getAppsActivasEmpresa } from "@/lib/empresa-apps";
 
 export const dynamic = "force-dynamic";
 
@@ -16,6 +17,8 @@ export default async function AppsPage() {
   const esDueno = usuario.rol === "dueno";
   const nombre = usuario.nombre ?? "Usuario";
   const empresa = usuario.empresa as unknown as { id: string; nombre: string } | null;
+
+  const appsActivas = await getAppsActivasEmpresa();
 
   return (
     <div className="min-h-screen bg-bg flex flex-col">
@@ -62,6 +65,7 @@ export default async function AppsPage() {
           iconColor="#22C55E"
           title="POS"
           description="Caja, turnos y cobros"
+          activa={appsActivas.includes("pos")}
         />
         {esDueno && (
           <AppCard
@@ -70,6 +74,7 @@ export default async function AppsPage() {
             iconColor="#A855F7"
             title="Finanzas"
             description="KPIs, gastos y rentabilidad"
+            activa={appsActivas.includes("finanzas")}
           />
         )}
         {esDueno && (
@@ -79,6 +84,7 @@ export default async function AppsPage() {
             iconColor="#EF4444"
             title="Equipo"
             description="Miembros y roles"
+            activa={appsActivas.includes("equipo")}
           />
         )}
         {esDueno && (
@@ -88,6 +94,7 @@ export default async function AppsPage() {
             iconColor="#3B82F6"
             title="Productos"
             description="Catálogo y precios"
+            activa={appsActivas.includes("productos")}
           />
         )}
       </div>

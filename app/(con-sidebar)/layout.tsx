@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { getUsuarioActual } from "@/lib/auth-server";
+import { getAppsActivasEmpresa } from "@/lib/empresa-apps";
 import AppSidebar from "@/components/AppSidebar";
 
 function getIniciales(texto: string): string {
@@ -19,12 +20,15 @@ export default async function ConSidebarLayout({
   const userInitials = getIniciales(usuario.nombre ?? usuario.email);
   const userName = usuario.nombre ?? usuario.email.split("@")[0];
 
+  const appsActivas = await getAppsActivasEmpresa();
+
   return (
     <div className="min-h-screen bg-bg">
       <AppSidebar
         rol={usuario.rol as "dueno" | "cajero"}
         userInitials={userInitials}
         userName={userName}
+        appsActivas={appsActivas}
       />
       <main
         className="transition-all duration-200"

@@ -1,6 +1,11 @@
+import { redirect } from "next/navigation";
+import { isAppActiva } from "@/lib/empresa-apps";
 import AppHeader from "@/components/AppHeader";
 
-export default function FinanzasLayout({ children }: { children: React.ReactNode }) {
+export default async function FinanzasLayout({ children }: { children: React.ReactNode }) {
+  const activa = await isAppActiva("finanzas");
+  if (!activa) redirect("/upgrade/finanzas");
+
   return (
     <>
       <AppHeader
@@ -12,9 +17,7 @@ export default function FinanzasLayout({ children }: { children: React.ReactNode
           { label: "Gastos", href: "/finanzas/gastos" },
         ]}
       />
-      <div className="px-8 py-6">
-        {children}
-      </div>
+      <div className="px-8 py-6">{children}</div>
     </>
   );
 }

@@ -7,16 +7,18 @@ import {
   ShoppingCart, BarChart3, Users, Package,
   PanelLeftClose, MoreHorizontal,
 } from "lucide-react";
+import type { AppSlug } from "@/lib/empresa-apps";
 
 type AppSidebarProps = {
   rol: "dueno" | "cajero";
   userInitials: string;
   userName: string;
+  appsActivas: AppSlug[];
 };
 
 const APP_ITEMS = [
   {
-    id: "pos" as const,
+    id: "pos" as AppSlug,
     label: "POS",
     href: "/pos",
     Icon: ShoppingCart,
@@ -24,7 +26,7 @@ const APP_ITEMS = [
     roles: ["dueno", "cajero"] as const,
   },
   {
-    id: "finanzas" as const,
+    id: "finanzas" as AppSlug,
     label: "Finanzas",
     href: "/finanzas",
     Icon: BarChart3,
@@ -32,7 +34,7 @@ const APP_ITEMS = [
     roles: ["dueno"] as const,
   },
   {
-    id: "equipo" as const,
+    id: "equipo" as AppSlug,
     label: "Equipo",
     href: "/equipo",
     Icon: Users,
@@ -40,7 +42,7 @@ const APP_ITEMS = [
     roles: ["dueno"] as const,
   },
   {
-    id: "productos" as const,
+    id: "productos" as AppSlug,
     label: "Productos",
     href: "/productos",
     Icon: Package,
@@ -49,7 +51,7 @@ const APP_ITEMS = [
   },
 ];
 
-export default function AppSidebar({ rol, userInitials, userName }: AppSidebarProps) {
+export default function AppSidebar({ rol, userInitials, userName, appsActivas }: AppSidebarProps) {
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -62,7 +64,6 @@ export default function AppSidebar({ rol, userInitials, userName }: AppSidebarPr
     pathname.startsWith("/productos") ? "productos":
     null;
 
-  // Leer estado guardado de localStorage al montar
   useEffect(() => {
     const saved = localStorage.getItem("sqnar-sidebar-collapsed");
     const isCollapsed = saved === "true";
@@ -73,7 +74,6 @@ export default function AppSidebar({ rol, userInitials, userName }: AppSidebarPr
     );
   }, []);
 
-  // Sincronizar CSS var cuando cambia el estado
   useEffect(() => {
     document.documentElement.style.setProperty(
       "--sidebar-width",
@@ -164,6 +164,24 @@ export default function AppSidebar({ rol, userInitials, userName }: AppSidebarPr
         <nav className="flex flex-col gap-0.5">
           {visibleItems.map(({ id, label, href, Icon, color }) => {
             const isActive = currentApp === id;
+            const isActiva = appsActivas.includes(id);
+
+            if (!isActiva) {
+              return (
+                <Link
+                  key={id}
+                  href={`/upgrade/${id}`}
+                  title={label}
+                  className="flex items-center gap-3 mx-2 px-3 py-2 rounded-lg opacity-40 cursor-not-allowed"
+                >
+                  <Icon size={20} style={{ color: "#A3A3A3" }} className="shrink-0" />
+                  {!collapsed && (
+                    <span className="text-sm truncate text-muted">{label}</span>
+                  )}
+                </Link>
+              );
+            }
+
             return (
               <Link
                 key={id}
